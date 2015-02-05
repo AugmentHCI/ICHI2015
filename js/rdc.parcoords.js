@@ -6,7 +6,7 @@ var marginLeft = 50, marginRight = 50 + marginHack, marginBottom = 50 + marginHa
 
 var dimensions = ["age", "heartrate", "systolic blood pressure", "diastolic blood pressure", "weight", "bmi"];
 
-var bounds = [];
+var dimensionArray = [];
 var innerWidth = window.innerWidth - marginHack;
 var innerHeight = (window.innerHeight - marginHack) / 1;
 
@@ -21,11 +21,11 @@ var svgContainer = d3.select("body").append("svg")
     .attr("width", innerWidth)
     .attr("height", innerHeight);
 
-// Draw the axes
-var axis = svgContainer.selectAll("line")
+// Draw the axesScales
+var axis = svgContainer.selectAll("lineInterpolation")
     .data(dimensions)
     .enter()
-    .append("line")
+    .append("lineInterpolation")
     .attr("stroke", "gray")
     .attr("id", function (d, i) {
         return "axis-" + d;
@@ -43,25 +43,43 @@ var axis = svgContainer.selectAll("line")
         return yZero + height;
     });
 
+var selectionAreaWidth = 40;
+// Draw the selectionAreas
+var selectionAreas = svgContainer.selectAll("rect")
+    .data(dimensions)
+    .enter()
+    .append("rect")
+    .attr("id", function (d, i) {
+        return "selectionArea-" + d;
+    })
+    .attr("x", function (d, i) {
+        return (xZero + widthBetween * i) - selectionAreaWidth / 2;
+    })
+    .attr("y", function (d, i) {
+        return yZero;
+    })
+    .attr("width", selectionAreaWidth)
+    .attr("height", height);
+
 var axesLabel = svgContainer.selectAll('text')
     .data(dimensions)
     .enter()
     .append('text')
-    .attr("x", function (d,i) {
+    .attr("x", function (d, i) {
         return xZero + widthBetween * i;
     })
-    .attr("y", function (d,i) {
+    .attr("y", function (d, i) {
         return yZero - 10;
     })
     .text(function (d) {
         return d;
     })
-    .attr("text-anchor","middle")
+    .attr("text-anchor", "middle")
     .attr("font-family", "sans-serif")
     .attr("font-size", "10px")
     .attr("fill", "grey");
 
-var line = d3.svg.line()
+var lineInterpolation = d3.svg.line()
     .x(function (d) {
         return d.x;
     })
@@ -70,26 +88,36 @@ var line = d3.svg.line()
     })
     .interpolate('linear');
 
-function render(data) {
+function render(dataCoordinates) {
     var path = svgContainer.selectAll('path')
-        .data(data);
+        .data(dataCoordinates);
     path
         .enter()
         .append('path')
         .attr('d', function (d) {
-            return line(d);
+            return lineInterpolation(d.coordinates);
         })
         .attr('fill', 'none')
         .style('stroke-width', 1)
         .style('stroke', 'steelblue');
 
     path.attr('d', function (d) {
-        return line(d);
+        return lineInterpolation(d.coordinates);
     }).attr('fill', 'none').style('stroke-width', 1)
-        .style('stroke', 'steelblue');
+        .style('stroke', function (d) {
+            if (!d.selected) {
+                return 'steelblue';
+            } else {
+                return 'red';
+            }
+        });
 
     path.exit().remove();
 }
+
+var allData;
+var dataElements;
+var dataDimensions;
 
 // read the data
 d3.csv("../data/testdata24.csv", function (error, data) {
@@ -100,13 +128,23 @@ d3.csv("../data/testdata24.csv", function (error, data) {
         return d.age !== "NA"
     });
 
-    dimensions.forEach(function (dim) {
+    allData = data;
+    dataElements = crossfilter(data);
+
+    for (var i = 0; i < dimensions.length; i++) {
+        var dim = dimensions[i];
         var values = data.map(function (d) {
             return +d[dim]
         });
-        bounds.push({dimension: dim, min: d3.min(values), max: d3.max(values)});
-    });
-
+        dimensionArray.push({
+            dimension: dim,
+            min: d3.min(values),
+            max: d3.max(values),
+            crossDimension: dataElements.dimension(function (d) {
+                return d[dim];
+            })
+        });
+    }
     render(prepareXY(data));
 });
 
@@ -116,13 +154,85 @@ function prepareXY(data) {
     data.forEach(function (d) {
         var temp = [];
         for (var i = 0; i < dimensions.length; i++) {
-            var bound = bounds.filter(function (b) {
+            var bound = dimensionArray.filter(function (b) {
                 return b.dimension === dimensions[i]
             })[0];
-            var yValue = yZero + (height - yZero) * ((+d[dimensions[i]] - bound.min) / (bound.max - bound.min));
+            var yValue = valueToY(d[dimensions[i]], bound.min, bound.max);
             temp.push({x: (xZero + widthBetween * i), y: yValue})
         }
-        result.push(temp);
+        result.push({coordinates: temp, selected: d.selected === "true"});
     });
     return result;
 }
+
+var firstMousePosition;
+var mouseDown = false;
+
+svgContainer.on("mousedown", function () {
+    return false;
+});
+
+selectionAreas.on("mousedown", function (d, i) {
+    firstMousePosition = d3.mouse(this)[1];
+    mouseDown = true;
+});
+
+selectionAreas.on("mousemove", function (d, i) {
+    if (mouseDown) {
+        var selection = d3.selectAll("rect").data([d]);
+        selection.enter().append("rect")
+            .attr("x", function () {
+                return (xZero + widthBetween * i) - selectionAreaWidth / 2;
+            })
+            .attr("y", function () {
+                return firstMousePosition;
+            })
+            .attr("width", selectionAreaWidth + 50);
+
+        selection.attr("height",Math.abs(d3.mouse(this)[1] - firstMousePosition));
+
+        //selection.exit().remove();
+
+        //selectedDimensions.push({dimension: d, height:Math.abs(d3.mouse(this)[1] - firstMousePosition)});
+    }
+});
+
+selectionAreas.on("mouseup", function (d, index) {
+    mouseDown = false;
+    var lastMousePosition = d3.mouse(this)[1];
+    var dimensionElement = dimensionArray.filter(function (b) {
+        return b.dimension === d;
+    })[0];
+    var tmp = firstMousePosition;
+    if (lastMousePosition < firstMousePosition) {
+        firstMousePosition = lastMousePosition;
+        lastMousePosition = tmp;
+    }
+    var previousSelection = dimensionElement.crossDimension.top(Infinity);
+
+    dimensionElement.crossDimension.filter([yToValue(firstMousePosition, dimensionElement.min, dimensionElement.max), yToValue(lastMousePosition, dimensionElement.min, dimensionElement.max)]);
+    var selection = dimensionElement.crossDimension.top(Infinity);
+    if (selection.length == 0) {
+        dimensionElement.crossDimension.filter(null);
+        //selection = dimensionElement.crossDimension.top(Infinity);;
+    }
+    allData.forEach(function (d) {
+        if (selection.indexOf(d) !== -1) {
+            d.selected = "true";
+        }
+        else {
+            d.selected = "false";
+        }
+    });
+    render(prepareXY(allData));
+
+});
+
+function yToValue(y, min, max) {
+    return (y - yZero) / (height - yZero) * (max - min) + min;
+}
+
+function valueToY(value, min, max) {
+    return yZero + (height - yZero) * ((+value - min) / (max - min));
+}
+
