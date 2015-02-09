@@ -1,3 +1,25 @@
 .selected {
     stroke: red;
 }
+
+.selectionArea {
+    fill: lightgrey;
+    opacity: 0.1;
+    cursor: crosshair;
+}
+
+.axisLabel {
+    text-anchor: middle;
+    font-family: sans-serif;
+    font-size: 10px;
+    fill: grey;
+}
+
+.axis {
+    stroke: black;
+}
+
+.selectionBox {
+    fill: none;
+    stroke: grey;
+}

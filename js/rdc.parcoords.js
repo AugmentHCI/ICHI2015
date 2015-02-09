@@ -2,6 +2,8 @@
  * Created by robindecroon on 27/01/2015.{}
  */
 
+var dataFile = "testdata25";
+
 /*
  * Data related arrays
  */
@@ -28,92 +30,148 @@ var widthBetween = width / dimensions.length;
 var xZero = marginLeft + (width / dimensions.length) / 2;
 var yZero = marginTop;
 
+var selectionAreaWidth = 40;
+
+
+var missingMarging = 100;
+
+var mouseDown = false;
+var selectionI;
+var thresshold = 3;
+
 
 /*
  * Draw the svg's
  */
 var svgContainer = d3.select("body").append("svg")
     .attr("width", innerWidth)
+    .attr("height", innerHeight - missingMarging)
+    .attr("class", "container")
+    .on("mousemove", function () {
+        if (mouseDown) {
+            var i = selectionI;
+
+            var lastMousePosition = d3.mouse(this)[1];
+
+            var startPosition = selectionBoxStarts[i];
+            selectionBoxEnds[i] = lastMousePosition;
+
+            selectionBoxHeights[i] = Math.abs(lastMousePosition - startPosition);
+
+
+            var dimensionElement = myCrossfilterDimensions[i];
+            var min = dimensionElement.min;
+            var max = dimensionElement.max;
+
+            var filter = null;
+            if (Math.abs(startPosition - lastMousePosition) > thresshold) {
+                drawSelectionbox();
+
+                if (startPosition < lastMousePosition) {
+                    filter = [yToValue(startPosition, min, max), yToValue(lastMousePosition, min, max)];
+                } else {
+                    filter = [yToValue(lastMousePosition, min, max), yToValue(startPosition, min, max)];
+                }
+            }
+
+            var crossfilterDimension = dimensionElement.crossDimension;
+            crossfilterDimension.filter(filter);
+            var selection = crossfilterDimension.top(Infinity);
+            allData.forEach(function (d) {
+                if (selection.indexOf(d) !== -1) {
+                    d.selected = "true";
+                }
+                else {
+                    d.selected = "false";
+                }
+            });
+            renderPaths(prepareXY(allData));
+        }
+    })
+    .on("mouseup", function (d, i) {
+        mouseDown = false;
+    });
+
+var pathContainer = svgContainer.append("svg")
+    .attr("width", innerWidth)
     .attr("height", innerHeight);
 
 var brushContainer = svgContainer.append("svg")
     .attr("width", innerWidth)
-    .attr("height", innerHeight);
+    .attr("height", innerHeight - missingMarging);
+
+function renderChartEssentials() {
+    // Draw the selectionAreas
+    var selectionAreas = svgContainer.selectAll("rect")
+        .data(dimensions)
+        .enter()
+        .append("rect")
+        .attr("id", function (d, i) {
+            return "selectionArea-" + d;
+        })
+        .attr("class", "selectionArea")
+        .attr("x", function (d, i) {
+            return (xZero + widthBetween * i) - selectionAreaWidth / 2;
+        })
+        .attr("y", function (d, i) {
+            return yZero;
+        })
+        .attr("width", selectionAreaWidth)
+        .attr("height", height)
+        .on("mousedown", function (d, i) {
+            selectionBoxStarts[i] = d3.mouse(this)[1];
+            mouseDown = true;
+            selectionI = i;
+        });
+
+    var axesLabels = svgContainer.selectAll('text')
+        .data(dimensions)
+        .enter()
+        .append('text')
+        .attr("x", function (d, i) {
+            return xZero + widthBetween * i;
+        })
+        .attr("y", function (d, i) {
+            return yZero - 10;
+        })
+        .text(function (d) {
+            return d;
+        })
+        .attr("class", "axisLabel");
 
 // Draw the axes
-var axes = svgContainer.selectAll("lineInterpolation")
-    .data(dimensions)
-    .enter()
-    .append("lineInterpolation")
-    .attr("stroke", "gray")
-    .attr("id", function (d, i) {
-        return "axis-" + d;
-    })
-    .attr("x1", function (d, i) {
-        return xZero + widthBetween * i;
-    })
-    .attr("y1", function (d, i) {
-        return yZero;
-    })
-    .attr("x2", function (d, i) {
-        return xZero + widthBetween * i;
-    })
-    .attr("y2", function (d, i) {
-        return yZero + height;
-    });
+    var axes = svgContainer.selectAll("line")
+        .data(dimensions)
+        .enter()
+        .append("line")
+        .attr("class", "axis")
+        .attr("id", function (d, i) {
+            return "axis-" + d;
+        })
+        .attr("x1", function (d, i) {
+            return xZero + widthBetween * i;
+        })
+        .attr("y1", function (d, i) {
+            return yZero;
+        })
+        .attr("x2", function (d, i) {
+            return xZero + widthBetween * i;
+        })
+        .attr("y2", function (d, i) {
+            return yZero + height;
+        });
 
-var selectionAreaWidth = 40;
-// Draw the selectionAreas
-var selectionAreas = svgContainer.selectAll("rect")
-    .data(dimensions)
-    .enter()
-    .append("rect")
-    .attr("id", function (d, i) {
-        return "selectionArea-" + d;
-    })
-    .attr("x", function (d, i) {
-        return (xZero + widthBetween * i) - selectionAreaWidth / 2;
-    })
-    .attr("y", function (d, i) {
-        return yZero;
-    })
-    .attr("width", selectionAreaWidth)
-    .attr("height", height);
+}
 
-var axesLabels = svgContainer.selectAll('text')
-    .data(dimensions)
-    .enter()
-    .append('text')
-    .attr("x", function (d, i) {
-        return xZero + widthBetween * i;
-    })
-    .attr("y", function (d, i) {
-        return yZero - 10;
-    })
-    .text(function (d) {
-        return d;
-    })
-    .attr("text-anchor", "middle")
-    .attr("font-family", "sans-serif")
-    .attr("font-size", "10px")
-    .attr("fill", "grey");
 
-var lineInterpolation = d3.svg.line()
-    .x(function (d) {
-        return d.x;
-    })
-    .y(function (d) {
-        return d.y;
-    })
-    .interpolate('linear');
-
-function render(dataCoordinates) {
-    var path = svgContainer.selectAll('path')
+function renderPaths(dataCoordinates) {
+    var path = pathContainer.selectAll('path')
         .data(dataCoordinates);
     path
         .enter()
         .append('path')
         .attr('d', function (d) {
+            // TODO hier moet ik zoeken. Vergeet ook niet de update. (maak er functie van)
             return lineInterpolation(d.coordinates);
         })
         .attr('fill', 'none')
@@ -125,9 +183,9 @@ function render(dataCoordinates) {
     }).attr('fill', 'none').style('stroke-width', 1)
         .style('stroke', function (d) {
             if (!d.selected) {
-                return 'steelblue';
+                return '#ECECEA';
             } else {
-                return 'red';
+                return 'steelblue';
             }
         });
 
@@ -138,7 +196,7 @@ var allData;
 var myCrossfilter;
 
 // read the data
-d3.csv("../data/testdata24.csv", function (error, data) {
+d3.csv("../data/" + dataFile + ".csv", function (error, data) {
     data = data.filter(function (d) {
         return d.bmi !== "NA"
     });
@@ -163,7 +221,9 @@ d3.csv("../data/testdata24.csv", function (error, data) {
             filter: null
         };
     }
-    render(prepareXY(data));
+    renderPaths(prepareXY(data));
+
+    renderChartEssentials();
 });
 
 
@@ -199,7 +259,7 @@ function drawSelectionbox() {
     selectionBox
         .attr('height', function (d, i) {
             if (selectionBoxStarts[i] < selectionBoxEnds[i]) {
-                return d3.min([d, height-selectionBoxStarts[i] + yZero]);
+                return d3.min([d, height - selectionBoxStarts[i] + yZero]);
             } else {
                 if (selectionBoxEnds[i] < yZero) {
                     return selectionBoxStarts[i] - yZero;
@@ -212,75 +272,20 @@ function drawSelectionbox() {
             if (selectionBoxStarts[i] < selectionBoxEnds[i]) {
                 return selectionBoxStarts[i];
             } else {
-                return d3.max([yZero,selectionBoxStarts[i] - d]);
+                return d3.max([yZero, selectionBoxStarts[i] - d]);
             }
         });
 
     selectionBox.enter().append('rect')
         .attr("x", function (d, i) {
-            return (xZero + widthBetween * i) - selectionAreaWidth / 2 - 25;
+            return (xZero + widthBetween * i) - selectionAreaWidth / 2;
         })
-        .attr("width", selectionAreaWidth + 50);
+        .attr("width", selectionAreaWidth)
+        .attr("class", "selectionBox");
 
     selectionBox.exit().remove();
+
 }
-
-var mouseDown = false;
-var selectionI;
-
-selectionAreas.on("mousedown", function (d, i) {
-    selectionBoxStarts[i] = d3.mouse(this)[1];
-    mouseDown = true;
-    selectionI = i;
-});
-
-svgContainer.on("mousemove", function () {
-    if (mouseDown) {
-        var i = selectionI;
-
-        var lastMousePosition = d3.mouse(this)[1];
-
-        var startPosition = selectionBoxStarts[i];
-        selectionBoxEnds[i] = lastMousePosition;
-
-        selectionBoxHeights[i] = Math.abs(lastMousePosition - startPosition);
-
-
-        var dimensionElement = myCrossfilterDimensions[i];
-        var min = dimensionElement.min;
-        var max = dimensionElement.max;
-
-        var filter = null;
-        if (Math.abs(startPosition - lastMousePosition) > thresshold) {
-            drawSelectionbox();
-
-            if (startPosition < lastMousePosition) {
-                filter = [yToValue(startPosition, min, max), yToValue(lastMousePosition, min, max)];
-            } else {
-                filter = [yToValue(lastMousePosition, min, max), yToValue(startPosition, min, max)];
-            }
-        }
-
-        var crossfilterDimension = dimensionElement.crossDimension;
-        crossfilterDimension.filter(filter);
-        var selection = crossfilterDimension.top(Infinity);
-        allData.forEach(function (d) {
-            if (selection.indexOf(d) !== -1) {
-                d.selected = "true";
-            }
-            else {
-                d.selected = "false";
-            }
-        });
-        render(prepareXY(allData));
-    }
-});
-
-var thresshold = 3;
-svgContainer.on("mouseup", function (d, i) {
-    mouseDown = false;
-});
-
 
 function yToValue(y, min, max) {
     return (y - yZero) / (height - yZero) * (max - min) + min;
@@ -289,4 +294,13 @@ function yToValue(y, min, max) {
 function valueToY(value, min, max) {
     return yZero + (height - yZero) * ((+value - min) / (max - min));
 }
+
+var lineInterpolation = d3.svg.line()
+    .x(function (d) {
+        return d.x;
+    })
+    .y(function (d) {
+        return d.y;
+    })
+    .interpolate('linear');
 
