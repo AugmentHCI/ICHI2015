@@ -237,7 +237,7 @@ function prepareXY() {
     allData.forEach(function (d) {
         var temp = [];
         for (var i = 0; i < dimensions.length; i++) {
-            if (d[dimensions[i]] == "NA" && dimensions[i] == "bmi") { // TODO Filters resetten
+            if (d[dimensions[i]] == "NA" && dimensions[i] == "bmi") {
 
                 var previousIndex = sortedData[i - 1].indexOf(d);
 
