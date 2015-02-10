@@ -2,14 +2,22 @@
  * Created by robindecroon on 27/01/2015.{}
  */
 
-var dataFile = "testdata25";
+var dataFile = "testdata24";
 
 /*
  * Data related arrays
  */
-var dimensions = ["age", "heartrate", "systolic blood pressure", "diastolic blood pressure", "weight", "bmi"];
+var dimensions = ["age", "heartrate", "systolic blood pressure", "diastolic blood pressure", "bmi", "weight"];
 var filters = [];
 filters.length = dimensions.length;
+
+var myCrossfilter;
+var sortedData = [];
+sortedData.length = dimensions.length;
+
+var lineMargin = 2;
+
+
 var myCrossfilterDimensions = [];
 myCrossfilterDimensions.length = dimensions.length;
 
@@ -23,8 +31,11 @@ var marginLeft = 50, marginRight = 50 + marginHack, marginBottom = 50 + marginHa
 var innerWidth = window.innerWidth - marginHack;
 var innerHeight = window.innerHeight - marginHack;
 
+var missingMarging = 300;
+
+
 var width = innerWidth - marginLeft - marginRight;
-var height = innerHeight - marginTop - marginBottom;
+var height = innerHeight - marginTop - marginBottom - missingMarging;
 
 var widthBetween = width / dimensions.length;
 var xZero = marginLeft + (width / dimensions.length) / 2;
@@ -32,8 +43,6 @@ var yZero = marginTop;
 
 var selectionAreaWidth = 40;
 
-
-var missingMarging = 100;
 
 var mouseDown = false;
 var selectionI;
@@ -45,7 +54,7 @@ var thresshold = 3;
  */
 var svgContainer = d3.select("body").append("svg")
     .attr("width", innerWidth)
-    .attr("height", innerHeight - missingMarging)
+    .attr("height", innerHeight)
     .attr("class", "container")
     .on("mousemove", function () {
         if (mouseDown) {
@@ -58,24 +67,26 @@ var svgContainer = d3.select("body").append("svg")
 
             selectionBoxHeights[i] = Math.abs(lastMousePosition - startPosition);
 
-
             var dimensionElement = myCrossfilterDimensions[i];
             var min = dimensionElement.min;
             var max = dimensionElement.max;
 
             var filter = null;
             if (Math.abs(startPosition - lastMousePosition) > thresshold) {
+                // Start drawing the selection box.
                 drawSelectionbox();
-
+                // adapt the filters to the new ranges
                 if (startPosition < lastMousePosition) {
                     filter = [yToValue(startPosition, min, max), yToValue(lastMousePosition, min, max)];
                 } else {
                     filter = [yToValue(lastMousePosition, min, max), yToValue(startPosition, min, max)];
                 }
             }
-
+            // apply the filter
             var crossfilterDimension = dimensionElement.crossDimension;
             crossfilterDimension.filter(filter);
+
+            // set the path attributes
             var selection = crossfilterDimension.top(Infinity);
             allData.forEach(function (d) {
                 if (selection.indexOf(d) !== -1) {
@@ -102,7 +113,7 @@ var brushContainer = svgContainer.append("svg")
 
 function renderChartEssentials() {
     // Draw the selectionAreas
-    var selectionAreas = svgContainer.selectAll("rect")
+    svgContainer.selectAll("rect")
         .data(dimensions)
         .enter()
         .append("rect")
@@ -124,7 +135,7 @@ function renderChartEssentials() {
             selectionI = i;
         });
 
-    var axesLabels = svgContainer.selectAll('text')
+    svgContainer.selectAll('text')
         .data(dimensions)
         .enter()
         .append('text')
@@ -139,8 +150,8 @@ function renderChartEssentials() {
         })
         .attr("class", "axisLabel");
 
-// Draw the axes
-    var axes = svgContainer.selectAll("line")
+    // Draw the axes
+    svgContainer.selectAll("line")
         .data(dimensions)
         .enter()
         .append("line")
@@ -160,9 +171,7 @@ function renderChartEssentials() {
         .attr("y2", function (d, i) {
             return yZero + height;
         });
-
 }
-
 
 function renderPaths(dataCoordinates) {
     var path = pathContainer.selectAll('path')
@@ -171,7 +180,6 @@ function renderPaths(dataCoordinates) {
         .enter()
         .append('path')
         .attr('d', function (d) {
-            // TODO hier moet ik zoeken. Vergeet ook niet de update. (maak er functie van)
             return lineInterpolation(d.coordinates);
         })
         .attr('fill', 'none')
@@ -184,6 +192,7 @@ function renderPaths(dataCoordinates) {
         .style('stroke', function (d) {
             if (!d.selected) {
                 return '#ECECEA';
+                //return "blue";
             } else {
                 return 'steelblue';
             }
@@ -193,54 +202,76 @@ function renderPaths(dataCoordinates) {
 }
 
 var allData;
-var myCrossfilter;
 
 // read the data
 d3.csv("../data/" + dataFile + ".csv", function (error, data) {
-    data = data.filter(function (d) {
-        return d.bmi !== "NA"
-    });
-    data = data.filter(function (d) {
-        return d.age !== "NA"
-    });
 
-    allData = data;
-    myCrossfilter = crossfilter(data);
+    allData = data.slice(0, 50);
+    myCrossfilter = crossfilter(allData);
 
     for (var i = 0; i < dimensions.length; i++) {
         var dim = dimensions[i];
-        var values = data.map(function (d) {
+        var values = allData.map(function (d) {
             return +d[dim]
         });
         myCrossfilterDimensions[i] = {
             min: d3.min(values),
             max: d3.max(values),
             crossDimension: myCrossfilter.dimension(function (d) {
-                return d[dim];
+                return +d[dim];
             }),
             filter: null
         };
+        sortedData[i] = myCrossfilterDimensions[i].crossDimension.top(Infinity);
     }
-    renderPaths(prepareXY(data));
+    renderPaths(prepareXY());
 
     renderChartEssentials();
+
+    console.log(sortedData);
 });
 
-
-function prepareXY(data) {
+function prepareXY() {
     var result = [];
-    data.forEach(function (d) {
+    var count = 0;
+    allData.forEach(function (d) {
         var temp = [];
         for (var i = 0; i < dimensions.length; i++) {
-            var bound = myCrossfilterDimensions[i];
-            var yValue = valueToY(d[dimensions[i]], bound.min, bound.max);
-            temp.push({x: (xZero + widthBetween * i), y: yValue})
+            if (d[dimensions[i]] == "NA" && dimensions[i] == "bmi") { // TODO Filters resetten
+
+                var previousIndex = sortedData[i - 1].indexOf(d);
+
+                var x = xZero + widthBetween * (i - 1) + previousIndex * lineMargin;
+
+                var bound = myCrossfilterDimensions[i - 1];
+                var y = valueToY(d[dimensions[i - 1]], bound.min, bound.max);
+
+                temp.push({x: x, y: y});
+                temp.push({x: x, y: height + missingMarging - count * lineMargin});
+
+
+                var nextIndex = sortedData[i + 1].indexOf(d)
+                var x2 = xZero + widthBetween * (i + 1) - nextIndex * lineMargin;
+                temp.push({x: x2, y: height + missingMarging - count * lineMargin});
+
+                var boundNext = myCrossfilterDimensions[i + 1];
+                var yNext = valueToY(d[dimensions[i + 1]], boundNext.min, boundNext.max);
+
+                temp.push({x: x2, y: yNext});
+                temp.push({x: (xZero + widthBetween * (i + 1)), y: yNext});
+
+                count = count + 1;
+                i = i + 1;
+            } else {
+                var bound = myCrossfilterDimensions[i];
+                var yValue = valueToY(d[dimensions[i]], bound.min, bound.max);
+                temp.push({x: (xZero + widthBetween * i), y: yValue})
+            }
         }
         result.push({coordinates: temp, selected: d.selected === "true"});
     });
     return result;
 }
-
 
 var selectionBoxHeights = [];
 for (var i = 0; i < dimensions.length; i++) {
@@ -284,7 +315,6 @@ function drawSelectionbox() {
         .attr("class", "selectionBox");
 
     selectionBox.exit().remove();
-
 }
 
 function yToValue(y, min, max) {
