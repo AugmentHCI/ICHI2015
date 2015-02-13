@@ -182,7 +182,6 @@ function renderChartEssentials() {
         });
 }
 
-
 function drawAxesLabels() {
     // prepare data per dimension
     for (var h = 0; h < dimensions.length; h++) {
@@ -235,7 +234,7 @@ function renderPaths() {
     allData.forEach(function (d) {
         var temp = [];
         for (var i = 0; i < dimensions.length; i++) {
-            if (d[dimensions[i]] == undefined) {
+            if (d[dimensions[i]] == -Infinity) {
 
                 var previousIndex = sortedData[i - 1].indexOf(d);
 
@@ -303,7 +302,7 @@ d3.csv("data/" + dataFile + ".csv", function (error, data) {
     allData.forEach(function (dataPoint) {
         dimensions.forEach(function (dimension) {
             if (dataPoint[dimension] === "NA") {
-                dataPoint[dimension] = undefined;
+                dataPoint[dimension] = -Infinity;
             }
         })
     });
@@ -316,8 +315,12 @@ d3.csv("data/" + dataFile + ".csv", function (error, data) {
             return +d[dim]
         });
         myCrossfilterDimensions[i] = {
-            min: d3.min(values),
-            max: d3.max(values),
+            min: d3.min(values.filter(function (b) {
+                return b !== -Infinity
+            })),
+            max: d3.max(values.filter(function (b) {
+                return b !== -Infinity
+            })),
             crossDimension: myCrossfilter.dimension(function (d) {
                 return +d[dim];
             }),
