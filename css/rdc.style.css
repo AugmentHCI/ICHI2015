@@ -4,8 +4,12 @@
 
 .selectionArea {
     fill: lightgrey;
-    opacity: 0.1;
+    opacity: 0;
     cursor: crosshair;
+}
+
+.selectionArea:hover {
+    opacity: 0.3;
 }
 
 .axisLabel {
@@ -23,3 +27,4 @@
     fill: none;
     stroke: grey;
 }
+
