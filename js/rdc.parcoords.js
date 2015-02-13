@@ -14,6 +14,7 @@ var sortedData = [];
 sortedData.length = dimensions.length;
 
 var lineMargin = 2;
+var nbLabels = 6;
 
 
 var myCrossfilterDimensions = [];
@@ -156,7 +157,7 @@ function renderChartEssentials() {
         .text(function (d) {
             return d;
         })
-        .attr("class", "axisLabel");
+        .attr("class", "axisMainLabel");
 
     // Draw the axes
     svgContainer.selectAll("line")
@@ -177,14 +178,56 @@ function renderChartEssentials() {
             return xZero + widthBetween * i;
         })
         .attr("y2", function (d, i) {
-            return yZero + height;
+            return height;
         });
 }
 
+
 function drawAxesLabels() {
-    dimensions.forEach(function (dimension) {
-        d3.select("")
-    });
+    // prepare data per dimension
+    for (var h = 0; h < dimensions.length; h++) {
+        var min = myCrossfilterDimensions[h].min;
+        var max = myCrossfilterDimensions[h].max;
+        var distance = (max - min) / nbLabels;
+        var axisLabels = [];
+        for (var j = 0; j <= nbLabels; j++) {
+            axisLabels.push(Math.floor(min + distance * j));
+        }
+
+        svgContainer.selectAll('labelText')
+            .data(axisLabels)
+            .enter()
+            .append('text')
+            .attr("x", function (d, i) {
+                return xZero + widthBetween * h - 10;
+            })
+            .attr("y", function (d, i) {
+                return yZero + ((height - yZero) / nbLabels) * i + 4;
+            })
+            .text(function (d) {
+                return d;
+            })
+            .attr("class", "axisLabel");
+
+        svgContainer.selectAll('labelLine')
+            .data(axisLabels)
+            .enter()
+            .append('line')
+            .attr("class", "axis")
+            .attr("x1", function (d, i) {
+                return xZero + widthBetween * h - 3;
+            })
+            .attr("y1", function (d, i) {
+                return yZero + ((height - yZero) / nbLabels) * i;
+            })
+            .attr("x2", function (d, i) {
+                return xZero + widthBetween * h + 3;
+            })
+            .attr("y2", function (d, i) {
+                return yZero + ((height - yZero) / nbLabels) * i;
+                ;
+            });
+    }
 }
 
 function renderPaths() {
@@ -278,6 +321,8 @@ d3.csv("data/" + dataFile + ".csv", function (error, data) {
     renderPaths();
 
     renderChartEssentials();
+
+    drawAxesLabels();
 });
 
 var selectionBoxHeights = [];
