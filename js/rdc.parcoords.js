@@ -135,7 +135,7 @@ function renderChartEssentials() {
             return yZero;
         })
         .attr("width", selectionAreaWidth)
-        .attr("height", height)
+        .attr("height", height - yZero)
         .on("mousedown", function (d, i) {
             selectionBoxStarts[i] = d3.mouse(this)[1];
             mouseDown = true;
@@ -225,7 +225,6 @@ function drawAxesLabels() {
             })
             .attr("y2", function (d, i) {
                 return yZero + ((height - yZero) / nbLabels) * i;
-                ;
             });
     }
 }
@@ -236,7 +235,7 @@ function renderPaths() {
     allData.forEach(function (d) {
         var temp = [];
         for (var i = 0; i < dimensions.length; i++) {
-            if (d[dimensions[i]] == "NA" && dimensions[i] == "bmi") {
+            if (d[dimensions[i]] == undefined) {
 
                 var previousIndex = sortedData[i - 1].indexOf(d);
 
@@ -301,6 +300,14 @@ function renderPaths() {
 d3.csv("data/" + dataFile + ".csv", function (error, data) {
 
     allData = data.slice(0, 80);
+    allData.forEach(function (dataPoint) {
+        dimensions.forEach(function (dimension) {
+            if (dataPoint[dimension] === "NA") {
+                dataPoint[dimension] = undefined;
+            }
+        })
+    });
+
     var myCrossfilter = crossfilter(allData);
 
     for (var i = 0; i < dimensions.length; i++) {
@@ -318,11 +325,13 @@ d3.csv("data/" + dataFile + ".csv", function (error, data) {
         };
         sortedData[i] = myCrossfilterDimensions[i].crossDimension.top(Infinity);
     }
+
     renderPaths();
 
     renderChartEssentials();
 
     drawAxesLabels();
+
 });
 
 var selectionBoxHeights = [];
@@ -342,7 +351,7 @@ function drawSelectionbox() {
     selectionBox
         .attr('height', function (d, i) {
             if (selectionBoxStarts[i] < selectionBoxEnds[i]) {
-                return d3.min([d, height - selectionBoxStarts[i] + yZero]);
+                return d3.min([d, height - selectionBoxStarts[i]]);
             } else {
                 if (selectionBoxEnds[i] < yZero) {
                     return selectionBoxStarts[i] - yZero;
