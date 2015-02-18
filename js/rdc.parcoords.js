@@ -8,8 +8,8 @@
     var dataFile = "testdata24";
     var nbOfDataElements = 40;
 
-//var dimensions = [ "bmi","diastolic blood pressure", "heartrate", "systolic blood pressure", "weight"];
-    var dimensions = ["age", "diastolic blood pressure", "bmi", "heartrate", "systolic blood pressure", "weight"];
+    var dimensions = ["bmi", "diastolic blood pressure", "heartrate", "systolic blood pressure", "weight"];
+//    var dimensions = ["age", "diastolic blood pressure", "bmi", "heartrate", "systolic blood pressure", "weight"];
 //var dimensions = ["age", "diastolic blood pressure", "heartrate", "systolic blood pressure", "weight", "bmi"];
 
     var allData;
@@ -236,30 +236,51 @@
                     }
 
                     if (i === 0) { // special case
-                        pathCoordinates.push({x: xZero, y: height + missingMarging - count * lineMargin});
-                    } else {
-                        var x = xZero + sortedData[i - 1].indexOf(d) * lineMargin + widthBetween * (i - 1);
-                        var y = valueToY(d[dimensions[i - 1]], myCrossfilterDimensions[i - 1].min, myCrossfilterDimensions[i - 1].max);
-                        pathCoordinates.push({x: x, y: y});
-                        pathCoordinates.push({x: x, y: height + missingMarging - count * lineMargin});
-                    }
-
-                    if (i < dimensions.length - 2) {
+                        pathCoordinates.push({
+                            x: xZero,
+                            y: height + missingMarging - (sortedData[i + 1].indexOf(d) * lineMargin)
+                        });
                         var nextIndex = sortedData[(i + l) + 1].indexOf(d);
                         var x2 = xZero + widthBetween * ((i + l) + 1) - nextIndex * lineMargin;
-                        pathCoordinates.push({x: x2, y: height + missingMarging - count * lineMargin});
+                        pathCoordinates.push({
+                            x: x2,
+                            y: height + missingMarging - (sortedData[i + 1].indexOf(d) * lineMargin)
+                        });
 
                         var boundNext = myCrossfilterDimensions[(i + l) + 1];
                         var yNext = valueToY(d[dimensions[(i + l) + 1]], boundNext.min, boundNext.max);
 
                         pathCoordinates.push({x: x2, y: yNext});
                         pathCoordinates.push({x: (xZero + widthBetween * ((i + l) + 1)), y: yNext});
-                    } else { // voorlaatste
+                    } else {
+                        var x = xZero + sortedData[i - 1].indexOf(d) * lineMargin + widthBetween * (i - 1);
+                        var y = valueToY(d[dimensions[i - 1]], myCrossfilterDimensions[i - 1].min, myCrossfilterDimensions[i - 1].max);
+                        pathCoordinates.push({x: x, y: y});
                         pathCoordinates.push({
-                            x: xZero + widthBetween * (dimensions.length - 1),
-                            y: height + missingMarging - count * lineMargin
+                            x: x,
+                            y: height + missingMarging - (sortedData[i - 1].indexOf(d) * lineMargin)
                         });
+                        if (i < dimensions.length - 2) {
+                            var nextIndex = sortedData[(i + l) + 1].indexOf(d);
+                            var x2 = xZero + widthBetween * ((i + l) + 1) - nextIndex * lineMargin;
+                            pathCoordinates.push({
+                                x: x2,
+                                y: height + missingMarging - (sortedData[i - 1].indexOf(d) * lineMargin)
+                            });
+
+                            var boundNext = myCrossfilterDimensions[(i + l) + 1];
+                            var yNext = valueToY(d[dimensions[(i + l) + 1]], boundNext.min, boundNext.max);
+
+                            pathCoordinates.push({x: x2, y: yNext});
+                            pathCoordinates.push({x: (xZero + widthBetween * ((i + l) + 1)), y: yNext});
+                        } else { // voorlaatste
+                            pathCoordinates.push({
+                                x: xZero + widthBetween * (dimensions.length - 1),
+                                y: height + missingMarging - (sortedData[i - 1].indexOf(d) * lineMargin)
+                            });
+                        }
                     }
+
 
                     count = count + 1;
                     i = (i + l) + 1;
@@ -285,7 +306,29 @@
             })
             .attr('fill', 'none')
             .style('stroke-width', 1)
-            .style('stroke', 'steelblue');
+            .style('stroke', 'steelblue')
+            .on('mouseover', function (d) {
+                if (d.selected) {
+                    d3.select(this)
+                        .style('stroke', '#600000')
+                        .style('stroke-width', 2);
+                } else {
+                    d3.select(this)
+                        .style('stroke', 'red')
+                        .style('stroke-width', 1);
+                }
+            })
+            .on('mouseout', function (d) {
+                if (d.selected) {
+                    d3.select(this)
+                        .style('stroke', 'steelblue')
+                        .style('stroke-width', 1);
+                } else {
+                    d3.select(this)
+                        .style('stroke', '#ECECEA')
+                        .style('stroke-width', 1);
+                }
+            });
 
         paths
             .style('stroke', function (d) {
