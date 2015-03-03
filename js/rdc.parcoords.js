@@ -6,10 +6,10 @@
     'use strict';
 
     var dataFile = "testdata24";
-    var nbOfDataElements = 40;
+    var nbOfDataElements = 60;
 
-    var dimensions = ["bmi", "diastolic blood pressure", "heartrate", "systolic blood pressure", "weight"];
-//    var dimensions = ["age", "diastolic blood pressure", "bmi", "heartrate", "systolic blood pressure", "weight"];
+    //var dimensions = ["bmi", "diastolic blood pressure", "heartrate", "systolic blood pressure", "weight"];
+    var dimensions = ["age", "diastolic blood pressure", "bmi", "heartrate", "systolic blood pressure", "weight"];
 //var dimensions = ["age", "diastolic blood pressure", "heartrate", "systolic blood pressure", "weight", "bmi"];
 
     var allData;
@@ -53,9 +53,13 @@
 
 
     var mouseDown = false;
+    var mousePositionY;
     var clickTime;
     var selectionI; // hack to do mouse action over the whole container
 
+    var dragging = false;
+
+    var previousoffset = 0;
 
     /*
      * Draw the svg's
@@ -65,14 +69,23 @@
         .attr("height", innerHeight)
         .attr("class", "container")
         .on("mousemove", function () {
+            var i = selectionI;
+            var lastMousePosition = d3.mouse(this)[1];
+            var startPosition = 0;
+            var offset
             if (mouseDown) {
-                var i = selectionI;
-                var lastMousePosition = d3.mouse(this)[1];
-
-                var startPosition = selectionBoxStarts[i];
-                selectionBoxEnds[i] = lastMousePosition;
-                selectionBoxHeights[i] = Math.abs(lastMousePosition - startPosition);
-
+                startPosition = selectionBoxStarts[i];
+                if (!dragging) {
+                    selectionBoxHeights[i] = Math.abs(lastMousePosition - startPosition);
+                    selectionBoxEnds[i] = lastMousePosition;
+                }
+                if (dragging) {
+                    offset = lastMousePosition - mousePositionY - previousoffset;
+                    previousoffset = offset;
+                    startPosition = selectionBoxStarts[i] + offset;
+                    selectionBoxStarts[i] = startPosition;
+                    selectionBoxEnds[i] = selectionBoxEnds[i] + offset;
+                }
                 var dimensionElement = myCrossfilterDimensions[i];
                 var min = dimensionElement.min;
                 var max = dimensionElement.max;
@@ -82,10 +95,10 @@
 
                 // Adapt the filters to the new ranges.
                 var filter;
-                if (startPosition < lastMousePosition) {
-                    filter = [yToValue(startPosition, min, max), yToValue(lastMousePosition, min, max)];
+                if (startPosition < selectionBoxEnds[i]) {
+                    filter = [yToValue(startPosition, min, max), yToValue(selectionBoxEnds[i], min, max)];
                 } else {
-                    filter = [yToValue(lastMousePosition, min, max), yToValue(startPosition, min, max)];
+                    filter = [yToValue(selectionBoxEnds[i], min, max), yToValue(startPosition, min, max)];
                 }
                 dimensionElement.crossDimension.filter(filter);
                 renderPaths();
@@ -95,9 +108,12 @@
             mouseDown = false;
             if ((+new Date() - clickTime) < 250) {
                 selectionBoxHeights[selectionI] = 0;
+                selectionBoxStarts[selectionI] = 0;
+                selectionBoxEnds[selectionI] = 0;
                 myCrossfilterDimensions[selectionI].crossDimension.filter(null);
                 renderPaths();
                 d3.select("#selectionBox-" + selectionI).attr("height", 0);
+                dragging = false;
             }
         });
 
@@ -108,6 +124,19 @@
     var brushContainer = svgContainer.append("svg")
         .attr("width", innerWidth)
         .attr("height", innerHeight);
+
+    function inSelectionBox(i, position) {
+        var start = selectionBoxStarts[i];
+        var end = selectionBoxEnds[i];
+        var temp;
+        if (start > end) {
+            temp = end;
+            end = start;
+            start = temp;
+        }
+        console.log("pos: " + position + " ,start: " + start + " , end: " + end);
+        return position > start && position < end; // end is not always reset in time
+    }
 
     function renderChartEssentials() {
         // Draw the selectionAreas
@@ -128,8 +157,10 @@
             .attr("width", selectionAreaWidth)
             .attr("height", height - yZero)
             .on("mousedown", function (d, i) {
+                dragging = inSelectionBox(i, d3.mouse(this)[1]);
                 selectionBoxStarts[i] = d3.mouse(this)[1];
                 mouseDown = true;
+                mousePositionY = d3.mouse(this)[1];
                 selectionI = i;
                 clickTime = +new Date();
             });
@@ -224,6 +255,7 @@
         var dataCoordinates = [];
         var count = 0;
         allData.forEach(function (d) {
+            var color = "steelblue"
             var pathCoordinates = [];
             for (var i = 0; i < dimensions.length; i++) {
                 if (d[dimensions[i]] == -Infinity) {
@@ -290,7 +322,7 @@
                 }
             }
             var selected = myCrossfilterDimensions[0].crossDimension.top(Infinity).indexOf(d) !== -1;
-            dataCoordinates.push({coordinates: pathCoordinates, selected: selected});
+            dataCoordinates.push({coordinates: pathCoordinates, selected: selected, color: color});
         });
 
 
