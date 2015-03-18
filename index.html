@@ -1,13 +1,66 @@
 <!DOCTYPE html>
+<meta charset="utf-8">
 <html lang="en">
 <head>
+    <link rel="stylesheet" type="text/css" href="bower_components/lightview/css/lightview/lightview.css"/>
     <link rel="stylesheet" href="css/rdc.style.css">
     <meta charset="utf-8">
     <title>Modified parallel coordinates</title>
-    <script src="js/d3.min.js"></script>
-    <script src="js/crossfilter.min.js"></script>
 </head>
 <body>
+
+
+<div class="gridster">
+    <ul>
+        <li data-row="1" data-col="1" data-sizex="3" data-sizey="2">
+            <div id="patient_filter" class="parcoords gridelement"></div>
+        </li>
+
+        <li data-row="2" data-col="1" data-sizex="1" data-sizey="1">
+            <div id="genderpopulation" class="gridelement"></div>
+        </li>
+
+        <li data-row="3" data-col="3" data-sizex="1" data-sizey="1">
+            <div id="icpc" class="gridelement"></div>
+        </li>
+
+        <li data-row="2" data-col="3" data-sizex="1" data-sizey="1">
+            <div id="mainIcpc" class="gridelement lightview"></div>
+        </li>
+        <li data-row="3" data-col="2" data-sizex="1" data-sizey="1">
+            <div id="medication" class="gridelement"></div>
+        </li>
+        <li data-row="3" data-col="1" data-sizex="1" data-sizey="1">
+            <div id="map-canvas" class="heatmap gridelement"></div>
+        </li>
+
+        <li data-row="2" data-col="2" data-sizex="1" data-sizey="1">
+            <div id="medicationGroup" class="gridelement"></div>
+        </li>
+
+        <li data-row="4" data-col="1" data-sizex="3" data-sizey="20">
+            <svg id="patients2" class="gridelement"></svg>
+        </li>
+    </ul>
+</div>
+
+<script src="bower_components/jquery/jquery-1.11.0.min.js"></script>
+<script src="bower_components/lightview/js/excanvas/excanvas.js"></script>
+<script src="bower_components/lightview/js/spinners/spinners.min.js"></script>
+<script src="bower_components/lightview/js/lightview/lightview.js"></script>
+<script src="bower_components/gridster/dist/jquery.gridster.js"></script>
+<script src="bower_components/d3/d3.min.js"></script>
+<script src="bower_components/crossfilter/crossfilter.min.js"></script>
+
+<script src="https://maps.googleapis.com/maps/api/js?sensor=false&libraries=drawing,visualization"></script>
+
+<script src="js/rdc.main.js"></script>
+<script src="js/rdc.patient-table.js"></script>
+<script src="js/rdc.patient-demographics.js"></script>
+<script src="js/rdc.double-horizontal-bar-chart.js"></script>
+<script src="js/rdc.heatmap.js"></script>
+<script src="js/rdc.horizontal-bar-chart.js"></script>
 <script src="js/rdc.parcoords.js"></script>
+
 </body>
 </html>

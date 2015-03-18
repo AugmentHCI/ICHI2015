@@ -1,3 +1,137 @@
+html, body {
+    position: static height : 100 % !important;
+    overflow: auto;
+    background-color: #ECECEA;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+}
+
+svg {
+    font: 10px sans-serif;
+    border: none !important;
+}
+
+ul {
+    list-style-type: none;
+}
+
+.gridster {
+    position: relative;
+}
+
+.gridster > * {
+    margin: 0;
+    -webkit-transition: height .4s, width .4s;
+    -moz-transition: height .4s, width .4s;
+    -o-transition: height .4s, width .4s;
+    -ms-transition: height .4s, width .4s;
+    transition: height .4s, width .4s;
+}
+
+.gridster .gs-w {
+    z-index: 2;
+    position: absolute;
+}
+
+.ready .gs-w:not(.preview-holder) {
+    -webkit-transition: opacity .3s, left .3s, top .3s;
+    -moz-transition: opacity .3s, left .3s, top .3s;
+    -o-transition: opacity .3s, left .3s, top .3s;
+    transition: opacity .3s, left .3s, top .3s;
+}
+
+.ready .gs-w:not(.preview-holder),
+.ready .resize-preview-holder {
+    -webkit-transition: opacity .3s, left .3s, top .3s, width .3s, height .3s;
+    -moz-transition: opacity .3s, left .3s, top .3s, width .3s, height .3s;
+    -o-transition: opacity .3s, left .3s, top .3s, width .3s, height .3s;
+    transition: opacity .3s, left .3s, top .3s, width .3s, height .3s;
+}
+
+.gridster .preview-holder {
+    z-index: 1;
+    position: absolute;
+    background-color: #fff;
+    border-color: #fff;
+    opacity: 0.3;
+}
+
+.gridelement {
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    box-shadow: 3px 3px 20px #888888;
+}
+
+.axis line,
+.axis path {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+}
+
+.axisText {
+    fill: #AAAAAA;
+}
+
+.axisLabel {
+    text-anchor: middle;
+    fill: grey;
+    text-shadow: 0 2px 0 white, 2px 0 0 white, 0 -2px 0 white, -2px 0 0 white;
+}
+
+.axisHelpLines {
+    stroke-width: 1px;
+    stroke: white;
+}
+
+.axis.x.left path, .axis.x.right path {
+    stroke: white;
+}
+
+.axis.x.left line, .axis.x.right line {
+    stroke: white;
+    stroke-width: 1px;
+}
+
+.axis.x.left text, .axis.x.right text {
+    fill: white;
+}
+
+.bar {
+    fill-opacity: .9;
+}
+
+.chart-title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.bar.left {
+    fill-opacity: .9;
+    fill: steelblue;
+}
+
+.bar.right {
+    fill-opacity: .9;
+    fill: #fa9fb5;
+}
+
+.outsideBarText {
+    fill: #AAAAAA;
+}
+
+.barTextR {
+    fill: white;
+    text-shadow: 0 1px 0 #fa9fb5, 1px 0 0 #fa9fb5, 0 -1px 0 #fa9fb5, -1px 0 0 #fa9fb5;
+}
+
+.barText {
+    fill: white;
+    text-shadow: 0 1px 0 steelblue, 1px 0 0 steelblue, 0 -1px 0 steelblue, -1px 0 0 steelblue;
+}
+
+
 .selectionArea {
     fill: lightgrey;
     opacity: 0;
@@ -8,12 +142,6 @@
     opacity: 0.3;
 }
 
-.axisLabel {
-    text-anchor: middle;
-    font-family: sans-serif;
-    font-size: 8px;
-    fill: grey;
-}
 
 .axisMainLabel {
     text-anchor: middle;
@@ -28,8 +156,36 @@
 }
 
 .selectionBox {
-    fill: none;
+    fill: lightgrey;
+    opacity: 0.5;
     stroke: grey;
+    cursor: move;
+}
+
+/* werkt niet..*/
+/*.selectionBox:hover {*/
+/*fill: black;*/
+/*cursor: move;*/
+/*}*/
+
+.header rect {
+    fill: steelblue;
+}
+
+.header text {
+    fill: white;
+    /*font: 10px sans-serif;*/
+    text-anchor: middle;
+}
+
+.cell rect {
+    fill: #ECECEA;
+}
+
+.cell text {
+    fill: black;
+    /*font: 10px sans-serif;*/
+    text-anchor: middle;
 }
 
 
