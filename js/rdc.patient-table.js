@@ -111,28 +111,44 @@ function refreshTable(sortOn, filteredData, reset) {
             return d.id;
         });
 
+    selectedRows = [];
+    for (var i = 0; i < filteredData.length; i++) {
+        selectedRows[i] = false;
+    }
+
     // create rows
     rows.enter().append("svg:g")
         .attr("class", "row")
-        .on("click", function (d) {
-            //d3.select("cell-" + d.id).style("fill", function () {
-            //    return colorHighlightSelected;
-            //});
-            console.log(d);
+        .attr("id", function (d, i) {
+            return "row-" + i
         })
-        //.on("mouseover", function (d) {
-        //    //d3.select("cell-" + d.id).style("fill", function () {
-        //    //    return colorHighlightSelected;
-        //    //});
-        //
-        //})
-        //.on("mouseout", function (d) {
-        //
-        //})
+        .on("click", function (d, i) {
+            if (!selectedRows[i]) {
+                d3.select(this).selectAll("rect").style("fill", colorHighlightSelected);
+                d3.select(this).selectAll("text").style("fill", "white");
+                selectedRows[i] = true;
+            } else {
+                d3.select(this).selectAll("rect").style("fill", colorNotSelected);
+                d3.select(this).selectAll("text").style("fill", "black");
+                selectedRows[i] = false;
+            }
+
+        })
+        .on("mouseover", function (d, i) {
+            if (!selectedRows[i]) {
+                d3.select(this).selectAll("rect").style("fill", colorSelected);
+                d3.select(this).selectAll("text").style("fill", "white");
+            }
+        })
+        .on("mouseout", function (d, i) {
+            if (!selectedRows[i]) {
+                d3.select(this).selectAll("rect").style("fill", colorNotSelected);
+                d3.select(this).selectAll("text").style("fill", "black");
+            }
+        })
     ;
 
     rows.exit().remove();
-
 
     // select cells
     var cells = rows.selectAll("g.cell").data(function (d) {
